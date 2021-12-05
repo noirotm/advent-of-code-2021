@@ -51,6 +51,30 @@ impl<T> Grid<T> {
         })
     }
 
+    pub fn from_split_whitespace_reader<R>(r: R) -> Result<Self, T::Err>
+    where
+        T: FromStr,
+        R: Read,
+    {
+        let cells = BufReader::new(r)
+            .lines()
+            .filter_map(|l| l.ok())
+            .map(|l| {
+                l.split_whitespace()
+                    .map(T::from_str)
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        let h = cells.len();
+        let w = cells.first().map_or(0, |c| c.len());
+
+        Ok(Self {
+            cells: cells.into_iter().flatten().collect(),
+            w,
+            h,
+        })
+    }
+
     pub fn from_map(points: HashMap<Point, T>) -> Self
     where
         T: Clone + Default,
@@ -151,6 +175,30 @@ impl<T> Grid<T> {
             self.get(c)
         }
     }
+
+    pub fn iter_row(&self, row: usize) -> RowIter<'_, T> {
+        RowIter {
+            grid: self,
+            row,
+            pos: 0,
+        }
+    }
+
+    pub fn iter_col(&self, col: usize) -> ColIter<'_, T> {
+        ColIter {
+            grid: self,
+            col,
+            pos: 0,
+        }
+    }
+
+    pub fn as_slice(&self) -> &[T] {
+        &self.cells
+    }
+
+    pub fn as_slice_mut(&mut self) -> &mut [T] {
+        &mut self.cells
+    }
 }
 
 impl<T> FromStr for Grid<T>
@@ -231,4 +279,36 @@ impl Coord for (usize, usize) {
 pub struct Point {
     x: i64,
     y: i64,
+}
+
+pub struct ColIter<'a, T> {
+    grid: &'a Grid<T>,
+    col: usize,
+    pos: usize,
+}
+
+impl<'a, T> Iterator for ColIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let val = self.grid.get((self.col, self.pos))?;
+        self.pos += 1;
+        Some(val)
+    }
+}
+
+pub struct RowIter<'a, T> {
+    grid: &'a Grid<T>,
+    row: usize,
+    pos: usize,
+}
+
+impl<'a, T> Iterator for RowIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let val = self.grid.get((self.pos, self.row))?;
+        self.pos += 1;
+        Some(val)
+    }
 }
