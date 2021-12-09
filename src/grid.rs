@@ -32,14 +32,15 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn from_reader<R: Read>(r: R) -> Result<Self, T::Error>
+    pub fn from_reader_callback<R, F, E>(r: R, f: F) -> Result<Self, E>
     where
-        T: TryFrom<u8>,
+        R: Read,
+        F: FnMut(u8) -> Result<T, E> + Copy,
     {
         let cells = BufReader::new(r)
             .lines()
             .filter_map(|l| l.ok())
-            .map(|l| l.bytes().map(T::try_from).collect::<Result<Vec<_>, _>>())
+            .map(|l| l.bytes().map(f).collect::<Result<Vec<_>, _>>())
             .collect::<Result<Vec<_>, _>>()?;
         let h = cells.len();
         let w = cells.first().map_or(0, |c| c.len());
@@ -49,6 +50,13 @@ impl<T> Grid<T> {
             w,
             h,
         })
+    }
+
+    pub fn from_reader<R: Read>(r: R) -> Result<Self, T::Error>
+    where
+        T: TryFrom<u8>,
+    {
+        Self::from_reader_callback(r, T::try_from)
     }
 
     pub fn from_split_whitespace_reader<R>(r: R) -> Result<Self, T::Err>
