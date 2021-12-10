@@ -4,6 +4,7 @@ use std::io;
 use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 use std::str::FromStr;
+use std::time::Instant;
 
 fn input_file(day: i32) -> String {
     format!("input/day{:02}", day)
@@ -28,10 +29,16 @@ pub trait Solver {
         let input = self
             .load_input(input_file)
             .expect("unable to open input file");
+
+        let start = Instant::now();
         let s1 = self.solve_first(&input);
+        let time = start.elapsed();
+        println!("Solution 1: {}\t({}ms)", s1, time.as_secs_f64() * 1000.0);
+
+        let start = Instant::now();
         let s2 = self.solve_second(&input);
-        println!("Solution 1: {}", s1);
-        println!("Solution 2: {}", s2);
+        let time = start.elapsed();
+        println!("Solution 2: {}\t({}ms)", s2, time.as_secs_f64() * 1000.0);
     }
 }
 
