@@ -33,12 +33,12 @@ pub trait Solver {
         let start = Instant::now();
         let s1 = self.solve_first(&input);
         let time = start.elapsed();
-        println!("Solution 1: {}\t({}ms)", s1, time.as_secs_f64() * 1000.0);
+        println!("Solution 1: {:<20} ({}ms)", s1, time.as_secs_f64() * 1000.0);
 
         let start = Instant::now();
         let s2 = self.solve_second(&input);
         let time = start.elapsed();
-        println!("Solution 2: {}\t({}ms)", s2, time.as_secs_f64() * 1000.0);
+        println!("Solution 2: {:<20} ({}ms)", s2, time.as_secs_f64() * 1000.0);
     }
 }
 
