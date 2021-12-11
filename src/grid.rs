@@ -12,7 +12,7 @@ pub struct Grid<T> {
     pub h: usize,
 }
 
-#[allow(dead_code)]
+#[allow(unused)]
 impl<T> Grid<T> {
     pub fn new(w: usize, h: usize) -> Self
     where
@@ -115,18 +115,12 @@ impl<T> Grid<T> {
         for (pt, cell) in points {
             let x = (pt.x + x_offset) as usize;
             let y = (pt.y + y_offset) as usize;
-            grid.set((x, y), cell);
+            if let Some(v) = grid.get_mut((x, y)) {
+                *v = cell;
+            }
         }
 
         grid
-    }
-
-    pub fn set(&mut self, c: impl Coord, value: T) {
-        if self.contains_coord(&c) {
-            if let Some(e) = self.cells.get_mut(c.x() + c.y() * self.w) {
-                *e = value;
-            }
-        }
     }
 
     pub fn get(&self, c: impl Coord) -> Option<&T> {
@@ -150,13 +144,27 @@ impl<T> Grid<T> {
     }
 
     pub fn neighbours4(&self, c: impl Coord) -> Vec<&T> {
+        self.neighbours_coords4(c)
+            .iter()
+            .flat_map(|&c| self.get(c))
+            .collect()
+    }
+
+    pub fn neighbours_coords4(&self, c: impl Coord) -> Vec<(usize, usize)> {
         [(-1, 0), (0, -1), (0, 1), (1, 0)]
             .iter()
-            .flat_map(|&(dx, dy)| self.neighbour(&c, dx, dy))
+            .flat_map(|&(dx, dy)| self.neighbour_coords(&c, dx, dy))
             .collect()
     }
 
     pub fn neighbours8(&self, c: impl Coord) -> Vec<&T> {
+        self.neighbours_coords8(c)
+            .iter()
+            .flat_map(|&c| self.get(c))
+            .collect()
+    }
+
+    pub fn neighbours_coords8(&self, c: impl Coord) -> Vec<(usize, usize)> {
         [
             (-1, -1),
             (-1, 0),
@@ -168,19 +176,18 @@ impl<T> Grid<T> {
             (1, 1),
         ]
         .iter()
-        .flat_map(|&(dx, dy)| self.neighbour(&c, dx, dy))
+        .flat_map(|&(dx, dy)| self.neighbour_coords(&c, dx, dy))
         .collect()
     }
 
-    fn neighbour(&self, c: &impl Coord, dx: isize, dy: isize) -> Option<&T> {
+    fn neighbour_coords(&self, c: &impl Coord, dx: isize, dy: isize) -> Option<(usize, usize)> {
         if (c.x() == 0 && dx == -1) || (c.y() == 0 && dy == -1) {
             None
         } else {
-            let c = (
+            Some((
                 ((c.x() as isize) + dx) as usize,
                 ((c.y() as isize) + dy) as usize,
-            );
-            self.get(c)
+            ))
         }
     }
 
