@@ -44,6 +44,12 @@ fn print_traversal(t: &[Node]) {
     );
 }
 
+#[derive(Clone)]
+struct Traversal {
+    nodes: Vec<Node>,
+    small_visited: HashSet<Node>,
+}
+
 fn find_all_traversals(g: &Graph<Node>) -> Vec<Vec<Node>> {
     // queue of nodes to visit
     let mut to_visit = VecDeque::new();
@@ -51,12 +57,15 @@ fn find_all_traversals(g: &Graph<Node>) -> Vec<Vec<Node>> {
     let mut traversals = vec![];
 
     // follow the graph
-    to_visit.push_back(vec![Node::Start]);
+    to_visit.push_back(Traversal {
+        nodes: vec![Node::Start],
+        small_visited: HashSet::new(),
+    });
     while let Some(node_traversal) = to_visit.pop_front() {
-        if let Some(last) = node_traversal.last() {
+        if let Some(last) = node_traversal.nodes.last() {
             // if we're at the end, add to the traversals, and continue
             if last == &Node::End {
-                traversals.push(node_traversal);
+                traversals.push(node_traversal.nodes);
                 continue;
             }
 
@@ -64,12 +73,16 @@ fn find_all_traversals(g: &Graph<Node>) -> Vec<Vec<Node>> {
             if let Some(next) = g.nodes.get(last) {
                 for node in next {
                     // ignore small nodes if we've seen them before
-                    if matches!(node, Node::Small(_)) && node_traversal.contains(node) {
+                    if node_traversal.small_visited.contains(node) {
                         continue;
                     }
 
                     let mut v = node_traversal.clone();
-                    v.push(node.clone());
+                    v.nodes.push(node.clone());
+                    if matches!(node, Node::Small(_)) {
+                        v.small_visited.insert(node.clone());
+                    }
+
                     to_visit.push_back(v);
                 }
             }
@@ -77,6 +90,13 @@ fn find_all_traversals(g: &Graph<Node>) -> Vec<Vec<Node>> {
     }
 
     traversals
+}
+
+#[derive(Clone)]
+struct TraversalPart2 {
+    nodes: Vec<Node>,
+    small_visited: HashMap<Node, usize>,
+    small_dup: Option<Node>,
 }
 
 fn find_all_traversals_part2(g: &Graph<Node>) -> Vec<Vec<Node>> {
@@ -86,12 +106,16 @@ fn find_all_traversals_part2(g: &Graph<Node>) -> Vec<Vec<Node>> {
     let mut traversals = vec![];
 
     // follow the graph
-    to_visit.push_back(vec![Node::Start]);
+    to_visit.push_back(TraversalPart2 {
+        nodes: vec![Node::Start],
+        small_visited: HashMap::new(),
+        small_dup: None,
+    });
     while let Some(node_traversal) = to_visit.pop_front() {
-        if let Some(last) = node_traversal.last() {
+        if let Some(last) = node_traversal.nodes.last() {
             // if we're at the end, add to the traversals, and continue
             if last == &Node::End {
-                traversals.push(node_traversal);
+                traversals.push(node_traversal.nodes);
                 continue;
             }
 
@@ -99,18 +123,23 @@ fn find_all_traversals_part2(g: &Graph<Node>) -> Vec<Vec<Node>> {
             if let Some(next) = g.nodes.get(last) {
                 for node in next {
                     // ignore small nodes if we've seen them twice before
-                    if matches!(node, Node::Small(_)) {
-                        if let Some(dup) = traversal_find_duplicate_small(&node_traversal) {
-                            // if we find the 3rd passage of one node, bail
-                            // or if we have dupes and we try to dupe another one, bail
-                            if &dup == node || node_traversal.contains(node) {
-                                continue;
-                            }
+                    if let Some(dup) = &node_traversal.small_dup {
+                        // if we find the 3rd passage of one node, bail
+                        // or if we have dupes and we try to dupe another one, bail
+                        if dup == node || node_traversal.small_visited.contains_key(node) {
+                            continue;
                         }
                     }
 
                     let mut v = node_traversal.clone();
-                    v.push(node.clone());
+                    v.nodes.push(node.clone());
+                    if matches!(node, Node::Small(_)) {
+                        let e = v.small_visited.entry(node.clone()).or_default();
+                        *e += 1;
+                        if *e == 2 {
+                            v.small_dup = Some(node.clone());
+                        }
+                    }
                     to_visit.push_back(v);
                 }
             }
@@ -118,23 +147,6 @@ fn find_all_traversals_part2(g: &Graph<Node>) -> Vec<Vec<Node>> {
     }
 
     traversals
-}
-
-fn traversal_find_duplicate_small(t: &[Node]) -> Option<Node> {
-    let smalls = t
-        .iter()
-        .filter(|t| matches!(t, Node::Small(_)))
-        .collect::<Vec<_>>();
-
-    let mut uniq = HashSet::new();
-    for s in smalls {
-        if uniq.contains(s) {
-            return Some(s.clone());
-        }
-        uniq.insert(s.clone());
-    }
-
-    None
 }
 
 fn build_graph(links: &[Link]) -> Graph<Node> {
