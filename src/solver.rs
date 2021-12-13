@@ -45,7 +45,7 @@ pub trait Solver {
 pub trait ReadExt<T> {
     fn split_commas(self) -> Vec<T>;
     fn split_lines(self) -> Vec<T>;
-    fn split_groups(&mut self) -> Vec<T>;
+    fn split_groups(self) -> Vec<T>;
 }
 
 impl<R, T> ReadExt<T> for R
@@ -70,7 +70,7 @@ where
             .collect()
     }
 
-    fn split_groups(&mut self) -> Vec<T> {
+    fn split_groups(self) -> Vec<T> {
         BufReader::new(self)
             .lines()
             .flatten()
