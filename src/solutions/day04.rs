@@ -11,7 +11,7 @@ impl Solver for Problem {
     type Output1 = u64;
     type Output2 = u64;
 
-    fn parse_input<R: Read>(&self, mut r: R) -> Self::Input {
+    fn parse_input<R: Read>(&self, r: R) -> Self::Input {
         let s: Vec<String> = r.split_groups();
         let picks = s[0].as_bytes().split_commas();
         let boards = s[1..]
